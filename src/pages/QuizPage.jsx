@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getQuiz, submitQuiz } from '../services/api';
 import { useAuthStore } from '../store/useAuthStore';
+import { useToastStore } from '../store/useToastStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Circle, ArrowRight, ArrowLeft } from 'lucide-react';
 
@@ -9,6 +10,7 @@ export default function QuizPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { error: errorToast } = useToastStore();
   
   const [quiz, setQuiz] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -46,7 +48,7 @@ export default function QuizPage() {
       navigate(`/results/${id}`);
     } catch (err) {
       console.error(err);
-      alert("Failed to submit quiz.");
+      errorToast("Failed to submit quiz.");
       setSubmitting(false);
     }
   };

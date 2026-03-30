@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createQuiz } from '../services/api';
 import { useAuthStore } from '../store/useAuthStore';
+import { useToastStore } from '../store/useToastStore';
 import { PlusCircle, Trash2, CheckCircle, Save, HelpCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CreateQuiz() {
   const { user } = useAuthStore();
+  const { error: errorToast, success: successToast, info: infoToast } = useToastStore();
   const navigate = useNavigate();
   
   const [title, setTitle] = useState('');
@@ -39,11 +41,27 @@ export default function CreateQuiz() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user) return alert("Must be logged in.");
+    if (!user) {
+      errorToast("Must be logged in.");
+      return;
+    }
     
-    for (let q of questions) {
+    // Validate all fields and correct answers
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      
+      // Check all fields are filled
       if (!q.question_text || !q.correct_answer || q.options.some(o => !o)) {
-        return alert("Please fill all fields for every question.");
+        errorToast(`Question ${i + 1}: Please fill all fields.`);
+        return;
+      }
+      
+      // Validate that correct_answer matches one of the options
+      if (!q.options.includes(q.correct_answer)) {
+        errorToast(
+          `Question ${i + 1}: Correct answer must match one of the options.`
+        );
+        return;
       }
     }
 
@@ -58,14 +76,14 @@ export default function CreateQuiz() {
       const res = await createQuiz(payload);
       console.log('Create quiz response:', res);
       if (!res.quiz_code) {
-        alert(`Error: ${res.message || 'Unknown error'}`);
+        errorToast(`Error: ${res.message || 'Unknown error'}`);
         return;
       }
-      alert(`Quiz Created! Share Code: ${res.quiz_code}`);
-      navigate('/');
+      successToast(`Quiz Created! Share Code: ${res.quiz_code}`);
+      setTimeout(() => navigate('/'), 1500);
     } catch (err) {
       console.error('Create quiz error:', err);
-      alert(`Failed to create quiz: ${err.message}`);
+      errorToast(`Failed to create quiz: ${err.message}`);
     } finally {
       setSubmitting(false);
     }
@@ -177,6 +195,19 @@ export default function CreateQuiz() {
                     className="w-full px-4 py-3 bg-emerald-950/20 border border-emerald-500/30 rounded-xl focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 outline-none text-emerald-100 placeholder-emerald-900/50"
                     placeholder="e.g. Option text here"
                   />
+                  {q.correct_answer && (
+                    <div className="mt-2">
+                      {q.options.includes(q.correct_answer) ? (
+                        <p className="text-xs text-emerald-400 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" /> Valid: matches an option
+                        </p>
+                      ) : (
+                        <p className="text-xs text-red-400 flex items-center gap-1">
+                          ❌ Invalid: doesn't match any option
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             ))}

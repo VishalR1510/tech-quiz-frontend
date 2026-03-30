@@ -1,26 +1,65 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getQuizzes } from '../services/api';
-import { Code, BookOpen, PlusCircle, ArrowRight } from 'lucide-react';
+import { getQuizzes, getUserQuizzes, deleteQuiz } from '../services/api';
+import { useAuthStore } from '../store/useAuthStore';
+import { useToastStore } from '../store/useToastStore';
+import { Code, BookOpen, PlusCircle, ArrowRight, Trash2 } from 'lucide-react';
 
 export default function Dashboard() {
+  const { user } = useAuthStore();
+  const { error: errorToast, success: successToast } = useToastStore();
   const [defaultQuizzes, setDefaultQuizzes] = useState([]);
+  const [userQuizzes, setUserQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quizCode, setQuizCode] = useState('');
+  const [deleting, setDeleting] = useState(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    getQuizzes()
-      .then(res => {
-        if (res.data) setDefaultQuizzes(res.data);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+    const fetchQuizzes = async () => {
+      try {
+        const [defaultRes, userRes] = await Promise.all([
+          getQuizzes().catch(() => ({ data: [] })),
+          user ? getUserQuizzes(user.id).catch(() => ({ data: [] })) : Promise.resolve({ data: [] })
+        ]);
+        setDefaultQuizzes(defaultRes.data || []);
+        setUserQuizzes(userRes.data || []);
+      } catch (err) {
+        console.error('Failed to fetch quizzes:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchQuizzes();
+  }, [user]);
 
   const handleJoinByCode = (e) => {
     e.preventDefault();
-    if (quizCode.trim()) navigate(`/quiz/code/${quizCode}`);
+    if (quizCode.trim()) navigate(`/quiz/${quizCode.trim()}`);
+  };
+
+  const handleDeleteQuiz = async (quizId) => {
+    if (confirmingDelete === quizId) {
+      // Proceed with deletion
+      try {
+        setDeleting(quizId);
+        await deleteQuiz(quizId, user.id);
+        setUserQuizzes(userQuizzes.filter(q => q.id !== quizId));
+        successToast('Quiz deleted successfully');
+        setConfirmingDelete(null);
+      } catch (err) {
+        console.error('Failed to delete quiz:', err);
+        errorToast(`Failed to delete quiz: ${err.message}`);
+      } finally {
+        setDeleting(null);
+      }
+    } else {
+      // Show confirmation
+      setConfirmingDelete(quizId);
+      setTimeout(() => setConfirmingDelete(null), 3000); // Auto-dismiss after 3 seconds
+    }
   };
 
   return (
@@ -65,6 +104,52 @@ export default function Dashboard() {
           </form>
         </div>
       </div>
+
+      {/* My Quizzes */}
+      {user && userQuizzes.length > 0 && (
+        <div>
+          <h2 className="text-xl font-bold mb-6 text-white flex items-center gap-2 px-2">
+            <PlusCircle className="w-5 h-5 text-purple-400" /> My Quizzes
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {userQuizzes.map(quiz => (
+              <div key={quiz.id} className="glass-panel p-6 rounded-2xl hover:-translate-y-1 transition-transform duration-300 group flex flex-col justify-between border-slate-700/50 hover:border-purple-500/30 border-2">
+                <div>
+                  <h3 className="font-bold text-xl text-white group-hover:text-purple-300 transition-colors line-clamp-2 leading-snug">{quiz.title}</h3>
+                  <div className="mt-3 flex gap-2 flex-wrap">
+                    <span className="inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-900/30 border border-purple-700/50 text-purple-300">
+                      {quiz.topic}
+                    </span>
+                    <span className="inline-flex items-center text-xs font-mono px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-400">
+                      {quiz.quiz_code}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-6 pt-4 border-t border-slate-800 flex justify-between items-center gap-2">
+                  <button
+                    onClick={() => handleDeleteQuiz(quiz.id)}
+                    disabled={deleting === quiz.id}
+                    className={`${
+                      confirmingDelete === quiz.id
+                        ? 'text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 bg-orange-500/5'
+                        : 'text-red-400 hover:text-red-300 hover:bg-red-500/10'
+                    } p-2 rounded-lg transition-all disabled:opacity-50 font-semibold text-xs`}
+                    title={confirmingDelete === quiz.id ? 'Click again to confirm deletion' : 'Delete this quiz'}
+                  >
+                    {confirmingDelete === quiz.id ? 'Confirm?' : <Trash2 className="w-4 h-4" />}
+                  </button>
+                  <Link 
+                    to={`/quiz/${quiz.id}`}
+                    className="flex items-center gap-2 text-purple-400 font-semibold text-sm hover:text-purple-300 transition-colors"
+                  >
+                    Take <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Default Quizzes */}
       <div>

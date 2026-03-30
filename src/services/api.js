@@ -2,17 +2,65 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
 export const getQuizzes = async () => {
   const res = await fetch(`${API_URL}/quizzes/default`);
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.detail || 'Failed to fetch quizzes');
+  }
+  return res.json();
+};
+
+export const getUserQuizzes = async (userId) => {
+  if (!userId) {
+    throw new Error('Missing userId parameter');
+  }
+  const res = await fetch(`${API_URL}/quizzes/my-quizzes/${userId}`);
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.detail || 'Failed to fetch your quizzes');
+  }
   return res.json();
 };
 
 export const getQuiz = async (id) => {
+  // Try to fetch by quiz_id first
   const res = await fetch(`${API_URL}/quiz/${id}`);
-  return res.json();
+  
+  // If not found and ID looks like a quiz code, try the code endpoint
+  if (res.status === 404 && id.length <= 8) {
+    const codeRes = await fetch(`${API_URL}/quiz/code/${id}`);
+    if (codeRes.ok) {
+      const data = await codeRes.json();
+      if (data.quiz_id) {
+        // Recursively fetch the full quiz with the ID
+        return getQuiz(data.quiz_id);
+      }
+    }
+    throw new Error('Quiz not found');
+  }
+  
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.detail || 'Failed to fetch quiz');
+  }
+  
+  const data = await res.json();
+  if (!data.quiz || !data.questions) {
+    throw new Error('Invalid quiz data received');
+  }
+  return data;
 };
 
 export const getQuizByCode = async (code) => {
   const res = await fetch(`${API_URL}/quiz/code/${code}`);
-  return res.json();
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.detail || 'Invalid quiz code');
+  }
+  const data = await res.json();
+  if (!data.quiz_id) {
+    throw new Error('Invalid response: missing quiz_id');
+  }
+  return data;
 };
 
 export const createQuiz = async (data) => {
@@ -35,10 +83,44 @@ export const submitQuiz = async (quizId, data) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  return res.json();
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.detail || 'Failed to submit quiz');
+  }
+  const result = await res.json();
+  if (typeof result.score !== 'number' || typeof result.total !== 'number') {
+    throw new Error('Invalid response: missing score or total');
+  }
+  return result;
 };
 
 export const getResults = async (quizId, userId) => {
+  if (!quizId || !userId) {
+    throw new Error('Missing required parameters: quizId and userId');
+  }
   const res = await fetch(`${API_URL}/quiz/${quizId}/results?user_id=${userId}`);
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.detail || 'Failed to fetch results');
+  }
+  const result = await res.json();
+  if (typeof result.score !== 'number' || !result.answers) {
+    throw new Error('Invalid response: missing score or answers');
+  }
+  return result;
+};
+
+export const deleteQuiz = async (quizId, userId) => {
+  if (!quizId || !userId) {
+    throw new Error('Missing required parameters: quizId and userId');
+  }
+  const res = await fetch(`${API_URL}/quiz/${quizId}?user_id=${userId}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.detail || 'Failed to delete quiz');
+  }
   return res.json();
 };

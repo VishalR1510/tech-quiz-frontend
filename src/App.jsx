@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { supabase } from './services/supabase';
 import { useAuthStore } from './store/useAuthStore';
+import { ToastContainer } from './components/Toast';
 
 // We will import these pages soon
 import Dashboard from './pages/Dashboard';
@@ -30,6 +31,7 @@ function App() {
     <BrowserRouter>
       <div className="font-sans text-slate-200">
         <Navbar />
+        <ToastContainer />
         <main className="container mx-auto px-4 py-8 max-w-4xl relative z-10">
           <Routes>
             <Route path="/" element={user ? <Dashboard /> : <Navigate to="/login" />} />
