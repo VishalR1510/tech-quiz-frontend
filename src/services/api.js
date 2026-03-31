@@ -1,7 +1,15 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+let API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+
+// Auto-append /api if it's missing from the base URL
+if (API_URL && !API_URL.endsWith('/api') && !API_URL.endsWith('/api/')) {
+  console.warn("VITE_API_URL is missing the '/api' suffix. Automatically appending it...");
+  API_URL = API_URL.endsWith('/') ? `${API_URL}api` : `${API_URL}/api`;
+}
 
 if (!import.meta.env.VITE_API_URL && import.meta.env.PROD) {
   console.error("VITE_API_URL is NOT defined in production! Requests will fail or point to localhost.");
+} else {
+  console.log(`[API] Using base URL: ${API_URL}`);
 }
 
 export const getQuizzes = async () => {
