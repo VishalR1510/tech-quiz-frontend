@@ -14,12 +14,12 @@ export default function CreateQuiz() {
   const [title, setTitle] = useState('');
   const [topic, setTopic] = useState('');
   const [questions, setQuestions] = useState([
-    { question_text: '', options: ['', '', '', ''], correct_answer: '' }
+    { question_text: '', options: ['', ''], correct_answer: '' }
   ]);
   const [submitting, setSubmitting] = useState(false);
 
   const handleAddQuestion = () => {
-    setQuestions([...questions, { question_text: '', options: ['', '', '', ''], correct_answer: '' }]);
+    setQuestions([...questions, { question_text: '', options: ['', ''], correct_answer: '' }]);
   };
 
   const handleQuestionChange = (index, field, value) => {
@@ -37,6 +37,20 @@ export default function CreateQuiz() {
   const handleRemoveQuestion = (index) => {
     const updated = questions.filter((_, i) => i !== index);
     setQuestions(updated);
+  };
+
+  const handleAddOption = (qIndex) => {
+    const updated = [...questions];
+    updated[qIndex].options.push('');
+    setQuestions(updated);
+  };
+
+  const handleRemoveOption = (qIndex, oIndex) => {
+    const updated = [...questions];
+    if (updated[qIndex].options.length > 2) {
+      updated[qIndex].options.splice(oIndex, 1);
+      setQuestions(updated);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -91,48 +105,44 @@ export default function CreateQuiz() {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-3xl mx-auto glass-panel p-6 sm:p-10 rounded-2xl relative overflow-hidden"
+      className="max-w-3xl mx-auto border border-zinc-800 bg-zinc-900/30 p-6 sm:p-10 rounded-2xl relative overflow-hidden shadow-sm"
     >
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-400 via-purple-500 to-brand-600"></div>
-      
-      <div className="mb-8 border-b border-slate-700/50 pb-6">
-        <h1 className="text-3xl font-extrabold text-white flex items-center gap-3">
-          <PlusCircle className="w-8 h-8 text-brand-400"/> Create Custom Quiz
-        </h1>
-        <p className="text-slate-400 mt-2">Design your own tech challenge and share it with others.</p>
+      <div className="mb-10 border-b border-zinc-800 pb-8">
+        <h1 className="text-2xl font-bold text-zinc-100 tracking-tight uppercase">Create Custom Quiz</h1>
+        <p className="text-zinc-500 mt-1 text-xs font-bold uppercase tracking-widest">Share your technical knowledge.</p>
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
           <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">Quiz Title</label>
+            <label className="block text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-widest">Quiz Title</label>
             <input 
               required
               type="text" 
               value={title}
               onChange={e => setTitle(e.target.value)}
-              className="input-field shadow-inner" 
+              className="input-field" 
               placeholder="e.g. Advanced React Patterns" 
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">Topic/Category</label>
+            <label className="block text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-widest">Topic</label>
             <input 
               required
               type="text" 
               value={topic}
               onChange={e => setTopic(e.target.value)}
-              className="input-field shadow-inner" 
+              className="input-field" 
               placeholder="e.g. React" 
             />
           </div>
         </div>
 
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <HelpCircle className="w-6 h-6 text-brand-400"/> Questions
+        <div className="space-y-10">
+          <h2 className="text-xs font-bold text-zinc-400 flex items-center gap-2 uppercase tracking-[0.2em] pt-4">
+            Questions
           </h2>
           
           <AnimatePresence>
@@ -142,68 +152,89 @@ export default function CreateQuiz() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="bg-slate-800/40 border border-slate-700/50 p-6 rounded-xl relative shadow-lg"
+                className="bg-zinc-950/40 border border-zinc-800 p-8 rounded-xl relative transition-all"
               >
                 {questions.length > 1 && (
                   <button 
                     type="button" 
                     onClick={() => handleRemoveQuestion(qIndex)}
-                    className="absolute top-4 right-4 text-red-400/70 hover:text-red-400 p-2 rounded-lg hover:bg-red-500/10 transition"
+                    className="absolute top-4 right-4 text-zinc-600 hover:text-red-400/80 transition-colors"
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 )}
                 
-                <div className="mb-6 pr-12">
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">Question {qIndex + 1}</label>
+                <div className="mb-8">
+                  <label className="block text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-widest">Question {qIndex + 1}</label>
                   <input 
                     required
                     type="text" 
                     value={q.question_text}
                     onChange={e => handleQuestionChange(qIndex, 'question_text', e.target.value)}
-                    className="input-field bg-slate-900/50"
+                    className="input-field bg-transparent"
                     placeholder="Enter the question text..."
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                   {q.options.map((opt, oIndex) => (
-                    <div key={oIndex}>
-                      <label className="block text-xs font-medium text-slate-400 mb-1">Option {oIndex + 1}</label>
+                    <div key={oIndex} className="relative">
+                      <label className="block text-[10px] font-bold text-zinc-500 mb-2 flex justify-between uppercase tracking-widest">
+                        Option {oIndex + 1}
+                        {q.options.length > 2 && oIndex >= 2 && (
+                          <button 
+                            type="button" 
+                            onClick={() => handleRemoveOption(qIndex, oIndex)}
+                            className="text-orange-400/80 hover:text-orange-400 transition-colors"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </label>
                       <input 
                         required
                         type="text" 
                         value={opt}
                         onChange={e => handleOptionChange(qIndex, oIndex, e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-900/50 border border-slate-700 rounded-lg focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 outline-none text-slate-200 text-sm"
+                        className="input-field bg-transparent"
                         placeholder={`Option ${oIndex + 1}`}
                       />
                     </div>
                   ))}
+                  
+                  <div className="flex items-end">
+                    <button 
+                      type="button" 
+                      onClick={() => handleAddOption(qIndex)}
+                      className="text-zinc-400 hover:text-white text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 transition h-[42px] px-2"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5"/> Add Option
+                    </button>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2 flex flex-wrap items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-emerald-400"/> Correct Answer 
-                    <span className="text-xs font-normal text-slate-500 bg-slate-900/60 px-2 py-0.5 rounded-full">(Must match one option exactly)</span>
+                <div className="border-t border-zinc-800 pt-6">
+                  <label className="block text-[10px] font-bold text-zinc-500 mb-2 flex flex-wrap items-center gap-2 uppercase tracking-widest">
+                    <CheckCircle className="w-3.5 h-3.5 text-zinc-400"/> Correct Answer 
+                    <span className="text-[10px] font-medium text-zinc-700">(Must match one option exactly)</span>
                   </label>
                   <input 
                     required
                     type="text" 
                     value={q.correct_answer}
                     onChange={e => handleQuestionChange(qIndex, 'correct_answer', e.target.value)}
-                    className="w-full px-4 py-3 bg-emerald-950/20 border border-emerald-500/30 rounded-xl focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 outline-none text-emerald-100 placeholder-emerald-900/50"
-                    placeholder="e.g. Option text here"
+                    className="input-field bg-transparent border-dashed border-zinc-800"
+                    placeholder="Enter the correct option content"
                   />
                   {q.correct_answer && (
-                    <div className="mt-2">
+                    <div className="mt-2 ml-1">
                       {q.options.includes(q.correct_answer) ? (
-                        <p className="text-xs text-emerald-400 flex items-center gap-1">
-                          <CheckCircle className="w-3 h-3" /> Valid: matches an option
+                        <p className="text-[10px] font-bold text-emerald-500/80 uppercase tracking-widest flex items-center gap-1">
+                          Valid match
                         </p>
                       ) : (
-                        <p className="text-xs text-red-400 flex items-center gap-1">
-                          ❌ Invalid: doesn't match any option
+                        <p className="text-[10px] font-bold text-red-500/80 uppercase tracking-widest flex items-center gap-1">
+                          No match found
                         </p>
                       )}
                     </div>
@@ -216,19 +247,19 @@ export default function CreateQuiz() {
           <button 
             type="button" 
             onClick={handleAddQuestion}
-            className="w-full py-4 border-2 border-dashed border-slate-600 text-slate-400 rounded-xl hover:border-brand-500 hover:bg-brand-500/5 hover:text-brand-400 transition-all font-semibold flex items-center justify-center gap-2"
+            className="w-full py-6 border border-zinc-800 bg-zinc-900/10 text-zinc-500 text-[10px] font-bold uppercase tracking-[0.2em] rounded-xl hover:border-zinc-700 hover:text-zinc-300 transition-all flex items-center justify-center gap-2"
           >
-            <PlusCircle className="w-5 h-5"/> Add Another Question
+            <PlusCircle className="w-4 h-4"/> Add Question
           </button>
         </div>
 
-        <div className="pt-8 border-t border-slate-700/50 flex justify-end">
+        <div className="pt-10 border-t border-zinc-800 flex justify-end">
           <button 
             type="submit" 
             disabled={submitting}
-            className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 text-lg py-4 px-8"
+            className="btn-primary w-full sm:w-auto text-xs uppercase tracking-widest py-4 px-10"
           >
-            {submitting ? 'Publishing...' : <><Save className="w-5 h-5"/> Publish Quiz</>}
+            {submitting ? 'Publishing...' : 'Publish Quiz'}
           </button>
         </div>
       </form>
