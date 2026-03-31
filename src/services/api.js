@@ -1,5 +1,9 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
+if (!import.meta.env.VITE_API_URL && import.meta.env.PROD) {
+  console.error("VITE_API_URL is NOT defined in production! Requests will fail or point to localhost.");
+}
+
 export const getQuizzes = async () => {
   const res = await fetch(`${API_URL}/quizzes/default`);
   if (!res.ok) {
