@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CreateQuiz() {
   const { user } = useAuthStore();
-  const { error: errorToast, success: successToast, info: infoToast } = useToastStore();
+  const { error: errorToast, success: successToast } = useToastStore();
   const navigate = useNavigate();
   
   const [title, setTitle] = useState('');

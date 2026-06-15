@@ -9,6 +9,7 @@ export default function Results() {
   const { user } = useAuthStore();
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -16,14 +17,17 @@ export default function Results() {
       .then(res => {
         setResult(res);
       })
-      .catch(console.error)
+      .catch((requestError) => {
+        console.error(requestError);
+        setError(requestError.message);
+      })
       .finally(() => setLoading(false));
   }, [quizId, user]);
 
   if (loading) return <div className="p-12 text-center text-slate-400 animate-pulse text-lg">Loading results...</div>;
-  if (!result) return <div className="p-12 text-center text-red-400 glass-panel max-w-lg mx-auto rounded-2xl">No results found for this quiz.</div>;
+  if (error || !result) return <div className="p-12 text-center text-red-400 glass-panel max-w-lg mx-auto rounded-2xl">{error || 'No results found for this quiz.'}</div>;
 
-  const totalQuestions = Object.keys(result.answers || {}).length;
+  const totalQuestions = result.total || Object.keys(result.answers || {}).length;
   const scorePercentage = totalQuestions > 0 ? Math.round((result.score / totalQuestions) * 100) : 0;
 
   const getScoreColors = (percent) => {

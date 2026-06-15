@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getQuizzes, getUserQuizzes, deleteQuiz } from '../services/api';
 import { useAuthStore } from '../store/useAuthStore';
 import { useToastStore } from '../store/useToastStore';
-import { Code, BookOpen, PlusCircle, ArrowRight, Trash2 } from 'lucide-react';
+import { PlusCircle, ArrowRight, RefreshCw } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuthStore();
@@ -11,29 +11,45 @@ export default function Dashboard() {
   const [defaultQuizzes, setDefaultQuizzes] = useState([]);
   const [userQuizzes, setUserQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState('');
   const [quizCode, setQuizCode] = useState('');
   const [deleting, setDeleting] = useState(null);
   const [confirmingDelete, setConfirmingDelete] = useState(null);
   const navigate = useNavigate();
 
+  const fetchQuizzes = useCallback(async () => {
+    setLoading(true);
+    setFetchError('');
+
+    const requests = [getQuizzes()]
+    if (user) requests.push(getUserQuizzes(user.id))
+
+    const [defaultResult, userResult] = await Promise.allSettled(requests)
+    const errors = []
+
+    if (defaultResult.status === 'fulfilled') {
+      setDefaultQuizzes(defaultResult.value.data)
+    } else {
+      setDefaultQuizzes([])
+      errors.push(`Available quizzes: ${defaultResult.reason.message}`)
+    }
+
+    if (!user) {
+      setUserQuizzes([])
+    } else if (userResult.status === 'fulfilled') {
+      setUserQuizzes(userResult.value.data)
+    } else {
+      setUserQuizzes([])
+      errors.push(`Your quizzes: ${userResult.reason.message}`)
+    }
+
+    if (errors.length > 0) setFetchError(errors.join(' '))
+    setLoading(false)
+  }, [user])
+
   useEffect(() => {
-    const fetchQuizzes = async () => {
-      try {
-        const [defaultRes, userRes] = await Promise.all([
-          getQuizzes().catch(() => ({ data: [] })),
-          user ? getUserQuizzes(user.id).catch(() => ({ data: [] })) : Promise.resolve({ data: [] })
-        ]);
-        setDefaultQuizzes(defaultRes.data || []);
-        setUserQuizzes(userRes.data || []);
-      } catch (err) {
-        console.error('Failed to fetch quizzes:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchQuizzes();
-  }, [user]);
+    fetchQuizzes()
+  }, [fetchQuizzes]);
 
   const handleJoinByCode = (e) => {
     e.preventDefault();
@@ -46,7 +62,7 @@ export default function Dashboard() {
       try {
         setDeleting(quizId);
         await deleteQuiz(quizId, user.id);
-        setUserQuizzes(userQuizzes.filter(q => q.id !== quizId));
+        setUserQuizzes((quizzes) => quizzes.filter((quiz) => quiz.id !== quizId));
         successToast('Quiz deleted successfully');
         setConfirmingDelete(null);
       } catch (err) {
@@ -151,6 +167,19 @@ export default function Dashboard() {
         <h2 className="text-sm font-bold mb-6 text-zinc-400 flex items-center gap-2 px-1 uppercase tracking-widest">
           Available Quizzes
         </h2>
+
+        {fetchError && (
+          <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300">
+            <p>{fetchError}</p>
+            <button
+              type="button"
+              onClick={fetchQuizzes}
+              className="flex shrink-0 items-center gap-2 font-bold uppercase tracking-widest text-xs text-red-200 hover:text-white"
+            >
+              <RefreshCw className="h-4 w-4" /> Retry
+            </button>
+          </div>
+        )}
         
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

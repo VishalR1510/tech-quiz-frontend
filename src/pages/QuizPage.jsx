@@ -17,6 +17,7 @@ export default function QuizPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -27,7 +28,10 @@ export default function QuizPage() {
           setQuestions(res.questions || []);
         }
       })
-      .catch(console.error)
+      .catch((error) => {
+        console.error(error);
+        setLoadError(error.message);
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -48,7 +52,7 @@ export default function QuizPage() {
       navigate(`/results/${id}`);
     } catch (err) {
       console.error(err);
-      errorToast("Failed to submit quiz.");
+      errorToast(`Failed to submit quiz: ${err.message}`);
       setSubmitting(false);
     }
   };
@@ -81,7 +85,13 @@ export default function QuizPage() {
       </div>
     );
   }
-  if (!quiz || questions.length === 0) return <div className="p-12 text-center text-red-400 glass-panel max-w-lg mx-auto rounded-2xl">Quiz not found or has no questions.</div>;
+  if (loadError || !quiz || questions.length === 0) {
+    return (
+      <div className="p-12 text-center text-red-400 glass-panel max-w-lg mx-auto rounded-2xl">
+        {loadError || 'Quiz not found or has no questions.'}
+      </div>
+    );
+  }
 
   const progress = ((currentIndex + 1) / questions.length) * 100;
 

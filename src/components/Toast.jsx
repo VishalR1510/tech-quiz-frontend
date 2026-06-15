@@ -2,7 +2,7 @@ import { useToastStore } from '../store/useToastStore';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export const Toast = ({ id, message, type = 'info', onClose }) => {
+export const Toast = ({ message, type = 'info', onClose }) => {
   const icons = {
     success: <CheckCircle2 className="w-5 h-5" />,
     error: <AlertCircle className="w-5 h-5" />,
@@ -44,7 +44,6 @@ export const ToastContainer = () => {
         {toasts.map((toast) => (
           <Toast
             key={toast.id}
-            id={toast.id}
             message={toast.message}
             type={toast.type}
             onClose={() => removeToast(toast.id)}
