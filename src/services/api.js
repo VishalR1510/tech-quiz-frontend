@@ -1,4 +1,20 @@
-let API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/+$/, '')
+const normalizeApiUrl = (value) => {
+  let normalized = value.trim().replace(/^['"]|['"]$/g, '')
+
+  if (normalized.startsWith('VITE_API_URL=')) {
+    normalized = normalized.slice('VITE_API_URL='.length).trim()
+  }
+
+  normalized = normalized.replace(/\/+$/, '')
+
+  try {
+    return new URL(normalized).toString().replace(/\/+$/, '')
+  } catch {
+    throw new Error('VITE_API_URL must be a valid absolute URL')
+  }
+}
+
+let API_URL = normalizeApiUrl(import.meta.env.VITE_API_URL || 'http://localhost:8000/api')
 const REQUEST_TIMEOUT_MS = 60000
 const RETRYABLE_STATUSES = new Set([502, 503, 504])
 
