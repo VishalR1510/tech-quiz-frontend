@@ -12,6 +12,28 @@ if (!import.meta.env.VITE_API_URL && import.meta.env.PROD) {
   console.log(`[API] Using base URL: ${API_URL}`);
 }
 
+export const resolveLoginEmail = async (identifier) => {
+  const normalizedIdentifier = identifier.trim();
+
+  if (normalizedIdentifier.includes('@')) {
+    return normalizedIdentifier.toLowerCase();
+  }
+
+  const res = await fetch(`${API_URL}/auth/resolve-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ identifier: normalizedIdentifier }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.detail || 'Could not find a user with that name');
+  }
+
+  const data = await res.json();
+  return data.email;
+};
+
 export const getQuizzes = async () => {
   const res = await fetch(`${API_URL}/quizzes/default`);
   if (!res.ok) {

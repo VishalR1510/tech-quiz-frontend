@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../services/supabase';
+import { resolveLoginEmail } from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, ArrowRight, AlertCircle, CheckCircle2, User } from 'lucide-react';
 
@@ -54,38 +55,24 @@ export default function Login() {
     setLoading(true);
     try {
       if (isSignUp) {
-        const { error: signUpError } = await supabase.auth.signUp({
-          email: identifier,
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: identifier.trim().toLowerCase(),
           password,
           options: {
             data: { name: name.trim() }
           }
         });
         if (signUpError) throw signUpError;
-        setSuccessMsg("Account created! Please check your email inbox to verify your account before logging in.");
-        setIsSignUp(false);
+
+        if (!signUpData.session) {
+          setSuccessMsg("Account created! Please check your email inbox to verify your account before logging in.");
+          setIsSignUp(false);
+        }
+
         setPassword('');
         setConfirmPassword('');
       } else {
-        let loginEmail = identifier;
-        
-        // If it's a Name (doesn't contain '@'), resolve it through the backend
-        if (!identifier.includes('@')) {
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
-          const resolveRes = await fetch(`${API_URL}/auth/resolve-email`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ identifier })
-          });
-          
-          if (!resolveRes.ok) {
-            const data = await resolveRes.json().catch(() => ({}));
-            throw new Error(data.detail || "Could not find a user with that Name");
-          }
-          const data = await resolveRes.json();
-          loginEmail = data.email;
-        }
-
+        const loginEmail = await resolveLoginEmail(identifier);
         const { error: signInError } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
         if (signInError) throw signInError;
       }
